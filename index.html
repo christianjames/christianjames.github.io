@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <meta name="viewport" content="width=device-width">
+    <title>Calculo Notification - Ponto</title>
+  </head>
+  <body cz-shortcut-listen="true">
+  <div class="app">
+    <h1>Calculo Ponto</h1>
+
+    <div>
+      Copie a tabela de pontos e cole abaixo, ou digite suas horas. <br />
+      Ex.: 09:30 - 12:00 - 13:00 - 19:10 <br />
+      <textarea name="pontos" id="pontos" cols="30" rows="10"></textarea><br />
+      <button class="startButton">Calcular</button>
+
+    <div class="resultado"></div>
+  </div>
+
+  <script>
+    String.prototype.trim = function () {
+        return this.replace(/^\s+|\s+$/g,"");
+    };
+
+    String.prototype.replaceAll = function(str1, str2, ignore){
+      return this.replace(new RegExp(str1.replace(/([\/\,\!\\\^\$\{\}\[\]\(\)\.\*\+\?\|\<\>\-\&])/g,"\\$&"),(ignore?"gi":"g")),(typeof(str2)=="string")?str2.replace(/\$/g,"$$$$"):str2);
+    };
+
+
+    retornaMensagemPonto = (pontos) => {
+      var today = new Date();
+      var pontosMoment = [];
+
+      pontos.map((item) => {
+        var pontoSplit = item.split(':')
+
+        var ponto = moment(item.dataBatida).set({'hour': pontoSplit[0], 'minute': pontoSplit[1], 'second': pontoSplit[2]})
+
+        pontosMoment.push(ponto)
+      })
+
+      var totalMinutosDia = 0;
+      var indexPontoRight = 0;
+
+      for (let index = 0; index < Math.ceil(pontosMoment.length/2); index++) {
+        const element = pontosMoment[index];
+
+        if (element) {
+          let dataA =  pontosMoment[indexPontoRight] ? pontosMoment[indexPontoRight] : moment();
+          let dataB =  pontosMoment[indexPontoRight+1] ? pontosMoment[indexPontoRight+1] :moment();
+
+          totalMinutosDia += dataB.diff((dataA), 'minutes')
+        }
+
+        indexPontoRight = indexPontoRight + 2;
+      }
+
+      var minutosDia = 528
+      let mensagem = '';
+
+
+      var minutos = 528 - totalMinutosDia;
+      var horaSaida = moment().add(minutos, 'minutes')
+
+      var horasFeitas = (minutosDia - minutos)/60
+      var minutosFeitos = Math.floor((horasFeitas%1)*60);
+
+      if (minutos < 0) {
+        mensagem = 'Você já compriu a sua carga horária. Você já fez '+parseInt(minutos*-1)+' minutos extras';
+      }
+      else if (minutos <= 60) {
+        mensagem = `Faltam ${parseInt(minutos)} minutos para encerrar seu expediente.`;
+      }
+      else {
+        var horas = minutos/60
+        var minutos = Math.floor((horas%1)*60);
+
+        mensagem = 'Faltam ' +parseInt(horas) + ' horas e '+ minutos + ' minutos para encerrar seu expediente.';
+      }
+
+      mensagem += '\n Seu expediente termina às '+ horaSaida.format('DD/MM/YYYY HH:mm')
+
+      mensagem += `\n Você fez ${parseInt(horasFeitas)} horas e ${parseInt(minutosFeitos)} minutos`
+
+      return mensagem
+    }
+
+    document.getElementsByClassName('startButton')[0].addEventListener('click', function(){
+      var textarea = document.getElementById('pontos').value
+
+      var pontos = [];
+
+      if (textarea) {
+        const regex = /(?:(?:([01]?\d|2[0-3]):)?([0-5]?\d):)?([0-5]?\d)(?:[000-999])/gm;
+
+        pontos = textarea.match(regex)
+      }
+      var mensagem = retornaMensagemPonto(pontos);
+
+      localStorage.setItem('pontos', textarea)
+
+      document.querySelectorAll('.resultado')[0].innerText = mensagem;
+  });
+
+  var pontos = localStorage.getItem('pontos');
+
+  document.getElementById('pontos').value = pontos;
+
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+
+</div></body></html>
